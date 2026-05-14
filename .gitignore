@@ -1,0 +1,33 @@
+# ============================================================
+# .gitignore — Fichiers à NE PAS envoyer sur GitHub
+# ============================================================
+
+# Dépendances Node.js (se réinstallent avec npm install)
+node_modules/
+*/node_modules/
+
+# Fichiers de build compilés (se regénèrent avec npm run build)
+frontend/dist/
+frontend/build/
+
+# Variables d'environnement SECRÈTES — ne JAMAIS committer !
+.env
+backend/.env
+**/.env
+
+
+# Images uploadées par les utilisateurs
+backend/uploads/
+!backend/uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
