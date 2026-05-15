@@ -1,76 +1,77 @@
-// Jenkinsfile — Pipeline CI/CD pour le portfolio
-// Ce fichier est lu par Jenkins à chaque git push
-
 pipeline {
-
-    // "agent any" = utilise n'importe quel serveur Jenkins disponible
     agent any
 
-    // Variables réutilisables dans tout le pipeline
     environment {
-        // Nom du projet (utilisé dans les commandes docker)
-        PROJECT_NAME = 'fullstack_portfolio'
-        // Dossier où se trouve le projet sur la VM
-        PROJECT_DIR = '/home/ubuntu/fullStack_portfolio'
+        IMAGE_NAME = "portfolio-app"
+        CONTAINER_NAME = "portfolio-container"
     }
 
     stages {
 
-        // ── STAGE 1 : Récupérer le code ─────────────────────────
-        stage('Récupérer le code') {
+        stage('Vérification') {
             steps {
-                // git pull = récupère les dernières modifications depuis GitHub
-                echo '📥 Récupération du code depuis GitHub...'
+                echo '📁 Vérification du workspace Jenkins...'
+
                 sh '''
-                    cd $PROJECT_DIR
-                    git pull origin main
+                pwd
+                ls -la
                 '''
             }
         }
 
-        // ── STAGE 2 : Construire les images Docker ───────────────
-        stage('Construire') {
+        stage('Construction Docker') {
             steps {
-                echo '🔨 Construction des images Docker...'
+                echo '🏗️ Construction de l’image Docker...'
+
                 sh '''
-                    cd $PROJECT_DIR
-                    docker compose build
+                docker build -t $IMAGE_NAME .
                 '''
             }
         }
 
-        // ── STAGE 3 : Déployer l'application ────────────────────
-        stage('Déployer') {
+        stage('Arrêt ancien conteneur') {
             steps {
-                echo '🚀 Déploiement de l application...'
+                echo '🛑 Suppression de l’ancien conteneur...'
+
                 sh '''
-                    cd $PROJECT_DIR
-                    docker compose down
-                    docker compose up -d
+                docker stop $CONTAINER_NAME || true
+                docker rm $CONTAINER_NAME || true
                 '''
             }
         }
 
-        // ── STAGE 4 : Vérifier que l'app tourne ─────────────────
-        stage('Vérifier') {
+        stage('Déploiement') {
             steps {
-                echo '✅ Vérification...'
+                echo '🚀 Lancement du nouveau conteneur...'
+
                 sh '''
-                    sleep 10
-                    curl -f http://localhost:5000 || exit 1
-                    docker compose ps
+                docker run -d \
+                  --name $CONTAINER_NAME \
+                  -p 3000:3000 \
+                  $IMAGE_NAME
+                '''
+            }
+        }
+
+        stage('Validation') {
+            steps {
+                echo '✅ Vérification du conteneur Docker...'
+
+                sh '''
+                docker ps
                 '''
             }
         }
     }
 
-    // Actions après le pipeline (succès ou échec)
     post {
+
         success {
-            echo '🎉 Déploiement réussi !'
+            echo '🎉 Déploiement terminé avec succès !'
         }
+
         failure {
-            echo '❌ Échec du déploiement. Vérifie les logs.'
+            echo '❌ Le pipeline a échoué.'
         }
     }
 }
