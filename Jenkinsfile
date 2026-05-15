@@ -1,5 +1,3 @@
-Copier
-
 // ============================================================
 // Jenkinsfile — Pipeline CI/CD corrigé pour le portfolio
 // Utilise docker compose (pas docker build seul)
