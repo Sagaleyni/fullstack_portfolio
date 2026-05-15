@@ -1,77 +1,124 @@
+// ============================================================
+// Jenkinsfile — Pipeline CI/CD corrigé pour le portfolio
+// Utilise docker compose (pas docker build seul)
+// La branche est "master" (pas "main")
+// ============================================================
+
 pipeline {
+
+    // Jenkins exécute le pipeline sur le serveur local
     agent any
 
     environment {
-        IMAGE_NAME = "portfolio-app"
-        CONTAINER_NAME = "portfolio-container"
+        // Chemin du workspace Jenkins (là où Jenkins clone le code)
+        // On utilise WORKSPACE car Jenkins clone déjà le projet ici
+        PROJECT_DIR = "${WORKSPACE}"
     }
 
     stages {
 
+        // ── STAGE 1 : Vérification ───────────────────────────────
+        // Jenkins clone le code automatiquement avant les stages
+        // On vérifie juste que tout est bien là
         stage('Vérification') {
             steps {
                 echo '📁 Vérification du workspace Jenkins...'
-
                 sh '''
-                pwd
-                ls -la
+                    pwd
+                    ls -la
+                    echo "✅ Fichiers présents"
                 '''
             }
         }
 
+        // ── STAGE 2 : Créer le fichier .env ──────────────────────
+        // Le .env n'est pas sur GitHub (sécurité)
+        // On le crée ici directement dans le workspace Jenkins
+        stage('Configuration .env') {
+            steps {
+                echo '⚙️ Création du fichier .env...'
+                sh '''
+                    # Créer le .env si il n'existe pas encore
+                    if [ ! -f backend/.env ]; then
+                        cp backend/.env.example backend/.env
+                        echo "✅ Fichier .env créé"
+                    else
+                        echo "✅ Fichier .env déjà présent"
+                    fi
+                '''
+            }
+        }
+
+        // ── STAGE 3 : Construction Docker ────────────────────────
+        // On utilise docker compose build (pas docker build seul)
+        // car notre projet a plusieurs services (backend, frontend, mongo)
         stage('Construction Docker') {
             steps {
-                echo '🏗️ Construction de l’image Docker...'
-
+                echo '🏗️ Construction des images Docker avec docker compose...'
                 sh '''
-                docker build -t $IMAGE_NAME .
+                    cd ${WORKSPACE}
+                    docker compose build
+                    echo "✅ Images construites"
                 '''
             }
         }
 
-        stage('Arrêt ancien conteneur') {
+        // ── STAGE 4 : Arrêt de l'ancienne version ────────────────
+        // On arrête les conteneurs qui tournent AVANT de redéployer
+        // "down" arrête et supprime les anciens conteneurs
+        stage('Arrêt ancienne version') {
             steps {
-                echo '🛑 Suppression de l’ancien conteneur...'
-
+                echo '⏹️ Arrêt des conteneurs existants...'
                 sh '''
-                docker stop $CONTAINER_NAME || true
-                docker rm $CONTAINER_NAME || true
+                    cd ${WORKSPACE}
+                    docker compose down
+                    echo "✅ Anciens conteneurs arrêtés"
                 '''
             }
         }
 
+        // ── STAGE 5 : Déploiement ────────────────────────────────
+        // On démarre les nouveaux conteneurs en mode détaché (-d)
         stage('Déploiement') {
             steps {
-                echo '🚀 Lancement du nouveau conteneur...'
-
+                echo '🚀 Démarrage des nouveaux conteneurs...'
                 sh '''
-                docker run -d \
-                  --name $CONTAINER_NAME \
-                  -p 3000:3000 \
-                  $IMAGE_NAME
+                    cd ${WORKSPACE}
+                    docker compose up -d
+                    echo "✅ Conteneurs démarrés"
                 '''
             }
         }
 
+        // ── STAGE 6 : Validation ─────────────────────────────────
+        // On attend 15 secondes que tout démarre
+        // puis on vérifie que l'API répond bien
         stage('Validation') {
             steps {
-                echo '✅ Vérification du conteneur Docker...'
-
+                echo '✅ Vérification que l application tourne...'
                 sh '''
-                docker ps
+                    echo "Attente du démarrage (15 secondes)..."
+                    sleep 15
+
+                    # Vérifier que les conteneurs tournent
+                    docker compose ps
+
+                    # Tester que l API répond
+                    curl -f http://localhost:5000 || exit 1
+
+                    echo "🎉 Application déployée avec succès !"
                 '''
             }
         }
     }
 
+    // ── ACTIONS APRÈS LE PIPELINE ────────────────────────────────
     post {
-
         success {
-            echo '🎉 Déploiement terminé avec succès !'
+            echo '🎉 Pipeline réussi ! Application mise à jour.'
         }
-
         failure {
-            echo '❌ Le pipeline a échoué.'
+            echo '❌ Le pipeline a échoué. Consulte la Console Output pour l erreur.'
         }
     }
 }
