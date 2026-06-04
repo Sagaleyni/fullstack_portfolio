@@ -1,0 +1,80 @@
+# ============================================================
+# docker-compose.yml — Orchestre les 3 services de l'application
+#
+# Services :
+#   mongo    → Base de données MongoDB
+#   backend  → API REST Express.js (port 5000)
+#   frontend → App React servie par Nginx (port 80)
+#
+# Lancement : docker compose up --build -d
+# Arrêt     : docker compose down
+# ============================================================
+
+version: "3.9"
+
+services:
+
+  # ─── SERVICE MONGODB ──────────────────────────────────────
+  mongo:
+    image: mongo:7         # image officielle MongoDB version 7
+    container_name: portfolio_mongo
+    restart: unless-stopped  # redémarre si le conteneur plante
+    volumes:
+      # Persiste les données MongoDB sur la machine hôte
+      # Ainsi les données ne sont pas perdues si le conteneur s'arrête
+      - mongo_data:/data/db
+    networks:
+      - portfolio_net
+    # MongoDB n'est PAS exposé à l'extérieur (sécurité)
+    # Seul le backend peut y accéder via le réseau interne
+
+  # ─── SERVICE BACKEND ──────────────────────────────────────
+  backend:
+    build:
+      context: ./backend  # dossier contenant le Dockerfile du backend
+    container_name: portfolio_backend
+    restart: unless-stopped
+    environment:
+      # Variables d'environnement injectées dans le conteneur
+      # "mongo" = nom du service MongoDB ci-dessus (résolution DNS interne)
+      MONGO_URI: mongodb://mongo:27017/portfolio
+      PORT: 5000
+      FRONTEND_URL: http://localhost
+    volumes:
+      # Persiste les images uploadées sur la machine hôte
+      - uploads_data:/app/uploads
+    ports:
+      # [port_hôte]:[port_conteneur]
+      # Accessible en développement sur http://localhost:5000
+      - "5000:5000"
+    depends_on:
+      - mongo   # démarre APRÈS MongoDB
+    networks:
+      - portfolio_net
+
+  # ─── SERVICE FRONTEND ─────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend  # dossier contenant le Dockerfile du frontend
+    container_name: portfolio_frontend
+    restart: unless-stopped
+    ports:
+      # Port 80 = HTTP standard → accessible sur http://localhost
+      - "80:80"
+    depends_on:
+      - backend  # démarre APRÈS le backend
+    networks:
+      - portfolio_net
+
+# ─── VOLUMES PERSISTANTS ──────────────────────────────────
+# Les volumes Docker survivent à l'arrêt des conteneurs
+volumes:
+  mongo_data:     # données de la base MongoDB
+  uploads_data:   # images uploadées
+
+# ─── RÉSEAU INTERNE ───────────────────────────────────────
+# Les services se parlent par leur nom (ex: "mongo", "backend")
+# sans exposer ces communications à l'extérieur
+networks:
+  portfolio_net:
+    driver: bridge
