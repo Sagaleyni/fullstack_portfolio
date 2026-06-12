@@ -1,29 +1,29 @@
-# ============================================================
-# backend/Dockerfile — Image Docker pour le serveur Express
-# ============================================================
-
-# FROM = image de base (Node.js 20 sur Alpine = légère, ~50MB)
 FROM node:20-alpine
 
-# Créer le dossier de travail à l'intérieur du conteneur
+# ─── ÉTAPE 2 : dossier de travail dans le conteneur ────────
+# Tous les fichiers du backend iront dans /app
 WORKDIR /app
 
-# COPY package*.json en premier (optimisation du cache Docker)
-# Si package.json ne change pas, Docker réutilise le cache npm install
+# ─── ÉTAPE 3 : copier package.json EN PREMIER ───────────────
+# Astuce Docker : on copie package.json séparément pour profiter
+# du cache — si le code change mais pas les dépendances, Docker
+# ne réinstalle pas tout
 COPY package*.json ./
 
-# Installer les dépendances de production uniquement
+# ─── ÉTAPE 4 : installer les dépendances ───────────────────
+# --omit=dev = on n'installe PAS nodemon en production
 RUN npm install --omit=dev
 
-# Copier tout le reste du code source
+# ─── ÉTAPE 5 : copier tout le reste du code ────────────────
 COPY . .
 
-# Créer le dossier pour les uploads d'images
+# ─── ÉTAPE 6 : créer le dossier uploads ────────────────────
+# Ce dossier recevra les images uploadées
 RUN mkdir -p uploads
 
-# Exposer le port que le serveur utilise (pour la documentation)
-# Cela ne publie pas le port — c'est fait dans docker-compose.yml
+# ─── ÉTAPE 7 : exposer le port ─────────────────────────────
+# Juste informatif — le vrai mapping se fait dans docker-compose
 EXPOSE 5000
 
-# Commande lancée au démarrage du conteneur
+# ─── ÉTAPE 8 : commande de démarrage ───────────────────────
 CMD ["node", "app.js"]
