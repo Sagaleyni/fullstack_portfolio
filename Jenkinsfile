@@ -6,7 +6,7 @@ pipeline {
         stage('Cloner le code') {
             steps {
                 echo 'Recuperation du code depuis GitHub...'
-                git branch: 'master',
+                git branch: 'main',
                     url: 'https://github.com/Sagaleyni/fullstack_portfolio.git'
             }
         }
