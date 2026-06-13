@@ -1,4 +1,5 @@
 services:
+
   mongo:
     image: mongo:7
     container_name: portfolio_mongo
@@ -31,9 +32,27 @@ services:
     networks:
       - portfolio_net
 
+  sonarqube:
+    image: sonarqube:community
+    container_name: portfolio_sonarqube
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    environment:
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    volumes:
+      - sonar_data:/opt/sonarqube/data
+      - sonar_logs:/opt/sonarqube/logs
+      - sonar_extensions:/opt/sonarqube/extensions
+    networks:
+      - portfolio_net
+
 volumes:
   mongo_data:
   uploads_data:
+  sonar_data:
+  sonar_logs:
+  sonar_extensions:
 
 networks:
   portfolio_net:

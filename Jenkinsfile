@@ -18,6 +18,7 @@ pipeline {
             steps {
                 sh 'docker --version'
                 sh 'docker compose version'
+                sh 'sonar-scanner --version'
                 sh 'ls -la fullstack_portfolio/'
             }
         }
@@ -30,6 +31,23 @@ pipeline {
                         cp $ENV_FILE fullstack_portfolio/backend/.env
                         chmod 600 fullstack_portfolio/backend/.env
                         echo ".env injecte avec succes"
+                    '''
+                }
+            }
+        }
+
+        stage('Analyse SonarQube') {
+            steps {
+                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                    sh '''
+                        cd fullstack_portfolio
+                        sonar-scanner \
+                          -Dsonar.projectKey=portfolio-fullstack \
+                          -Dsonar.projectName="Portfolio Fullstack" \
+                          -Dsonar.sources=frontend/src,backend \
+                          -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/uploads/** \
+                          -Dsonar.host.url=http://172.16.64.131:9000 \
+                          -Dsonar.token=$SONAR_TOKEN
                     '''
                 }
             }
@@ -73,10 +91,11 @@ Bonjour,
 
 Pipeline reussi avec succes !
 
-Projet  : ${JOB_NAME}
-Build   : #${BUILD_NUMBER}
-Acces   : http://172.16.64.131
-Logs    : ${BUILD_URL}
+Projet    : ${JOB_NAME}
+Build     : #${BUILD_NUMBER}
+App       : http://172.16.64.131
+SonarQube : http://172.16.64.131:9000
+Logs      : ${BUILD_URL}
 
 -- Jenkins CI/CD
                 """,
