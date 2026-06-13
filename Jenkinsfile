@@ -10,7 +10,6 @@ pipeline {
 
         stage('Cloner le code') {
             steps {
-                echo 'Recuperation du code depuis GitHub...'
                 git branch: 'main',
                     url: 'https://github.com/Sagaleyni/fullstack_portfolio.git'
             }
@@ -21,6 +20,15 @@ pipeline {
                 sh 'docker --version'
                 sh 'docker compose version'
                 sh 'ls -la'
+            }
+        }
+
+        stage('Injecter les secrets') {
+            steps {
+                withCredentials([file(credentialsId: 'portfolio-backend-env', variable: 'ENV_FILE')]) {
+                    sh 'cp $ENV_FILE fullstack_portfolio/backend/.env'
+                    echo 'Fichier .env injecte avec succes'
+                }
             }
         }
 
@@ -54,42 +62,40 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline reussi !'
             emailext(
-                subject: "✅ [Jenkins] Portfolio deploye avec succes - Build #${BUILD_NUMBER}",
+                subject: "✅ [Jenkins] Portfolio deploye - Build #${BUILD_NUMBER}",
                 body: """
-                    Bonjour,
+Bonjour,
 
-                    Le pipeline Jenkins a termine avec succes !
+Pipeline Jenkins termine avec succes !
 
-                    Projet     : ${JOB_NAME}
-                    Build      : #${BUILD_NUMBER}
-                    Statut     : SUCCES
-                    Application: http://172.16.64.131
+Projet     : ${JOB_NAME}
+Build      : #${BUILD_NUMBER}
+Statut     : SUCCES
+Application: http://172.16.64.131
 
-                    Voir les logs : ${BUILD_URL}
+Logs : ${BUILD_URL}
 
-                    -- Jenkins CI/CD
+-- Jenkins CI/CD
                 """,
                 to: "${EMAIL_DESTINATAIRE}"
             )
         }
         failure {
-            echo 'Pipeline echoue !'
             emailext(
-                subject: "❌ [Jenkins] ECHEC du pipeline - Build #${BUILD_NUMBER}",
+                subject: "❌ [Jenkins] ECHEC pipeline - Build #${BUILD_NUMBER}",
                 body: """
-                    Bonjour,
+Bonjour,
 
-                    Le pipeline Jenkins a echoue !
+Le pipeline Jenkins a echoue !
 
-                    Projet : ${JOB_NAME}
-                    Build  : #${BUILD_NUMBER}
-                    Statut : ECHEC
+Projet : ${JOB_NAME}
+Build  : #${BUILD_NUMBER}
+Statut : ECHEC
 
-                    Voir les logs : ${BUILD_URL}console
+Logs : ${BUILD_URL}console
 
-                    -- Jenkins CI/CD
+-- Jenkins CI/CD
                 """,
                 to: "${EMAIL_DESTINATAIRE}"
             )
