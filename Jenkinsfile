@@ -101,3 +101,14 @@ Logs   : ${BUILD_URL}console
         }
     }
 }
+stage('Injecter le .env') {
+    steps {
+        withCredentials([file(credentialsId: 'portfolio-backend-env', variable: 'ENV_FILE')]) {
+            sh '''
+                rm -f fullstack_portfolio/backend/.env
+                cp "$ENV_FILE" fullstack_portfolio/backend/.env
+                chmod 600 fullstack_portfolio/backend/.env
+            '''
+        }
+    }
+}
