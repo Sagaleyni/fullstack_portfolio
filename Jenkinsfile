@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        PROJET_DIR = 'fullstack_portfolio'
         EMAIL_DESTINATAIRE = 'saaleyni@gmail.com'
     }
 
@@ -19,15 +18,15 @@ pipeline {
             steps {
                 sh 'docker --version'
                 sh 'docker compose version'
-                sh 'ls -la'
+                sh 'ls -la fullstack_portfolio/'
             }
         }
 
-        stage('Injecter les secrets') {
+        stage('Injecter le .env') {
             steps {
                 withCredentials([file(credentialsId: 'portfolio-backend-env', variable: 'ENV_FILE')]) {
                     sh 'cp $ENV_FILE fullstack_portfolio/backend/.env'
-                    echo 'Fichier .env injecte avec succes'
+                    sh 'echo ".env injecte avec succes"'
                 }
             }
         }
@@ -53,9 +52,10 @@ pipeline {
 
         stage('Verification') {
             steps {
-                sh 'sleep 5'
+                sh 'sleep 8'
                 sh 'curl -f http://localhost || exit 1'
                 sh 'curl -f http://localhost/api/projets || exit 1'
+                sh 'echo "Application en ligne !"'
             }
         }
     }
@@ -67,14 +67,12 @@ pipeline {
                 body: """
 Bonjour,
 
-Pipeline Jenkins termine avec succes !
+Pipeline reussi avec succes !
 
-Projet     : ${JOB_NAME}
-Build      : #${BUILD_NUMBER}
-Statut     : SUCCES
-Application: http://172.16.64.131
-
-Logs : ${BUILD_URL}
+Projet  : ${JOB_NAME}
+Build   : #${BUILD_NUMBER}
+Acces   : http://172.16.64.131
+Logs    : ${BUILD_URL}
 
 -- Jenkins CI/CD
                 """,
@@ -87,13 +85,11 @@ Logs : ${BUILD_URL}
                 body: """
 Bonjour,
 
-Le pipeline Jenkins a echoue !
+Le pipeline a echoue !
 
 Projet : ${JOB_NAME}
 Build  : #${BUILD_NUMBER}
-Statut : ECHEC
-
-Logs : ${BUILD_URL}console
+Logs   : ${BUILD_URL}console
 
 -- Jenkins CI/CD
                 """,
