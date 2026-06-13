@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        PROJET_DIR = 'fullstack_portfolio'
+        EMAIL_DESTINATAIRE = 'saaleyni@gmail.com'
+    }
+
     stages {
 
         stage('Cloner le code') {
@@ -49,10 +54,45 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline reussi ! Application deployee avec succes.'
+            echo 'Pipeline reussi !'
+            emailext(
+                subject: "✅ [Jenkins] Portfolio deploye avec succes - Build #${BUILD_NUMBER}",
+                body: """
+                    Bonjour,
+
+                    Le pipeline Jenkins a termine avec succes !
+
+                    Projet     : ${JOB_NAME}
+                    Build      : #${BUILD_NUMBER}
+                    Statut     : SUCCES
+                    Application: http://172.16.64.131
+
+                    Voir les logs : ${BUILD_URL}
+
+                    -- Jenkins CI/CD
+                """,
+                to: "${EMAIL_DESTINATAIRE}"
+            )
         }
         failure {
-            echo 'Pipeline echoue. Verifiez les logs.'
+            echo 'Pipeline echoue !'
+            emailext(
+                subject: "❌ [Jenkins] ECHEC du pipeline - Build #${BUILD_NUMBER}",
+                body: """
+                    Bonjour,
+
+                    Le pipeline Jenkins a echoue !
+
+                    Projet : ${JOB_NAME}
+                    Build  : #${BUILD_NUMBER}
+                    Statut : ECHEC
+
+                    Voir les logs : ${BUILD_URL}console
+
+                    -- Jenkins CI/CD
+                """,
+                to: "${EMAIL_DESTINATAIRE}"
+            )
         }
         always {
             sh 'docker image prune -f'
