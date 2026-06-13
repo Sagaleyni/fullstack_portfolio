@@ -4,8 +4,8 @@
 // ============================================================
 
 const Projet = require("../models/Projet");
-const path = require("path");
-const fs = require("fs");
+const path = require("node:path");
+const fs = require("node:fs");
 
 // ─── GET TOUS ─────────────────────────────────────────────────
 // Retourne la liste complète de tous les projets

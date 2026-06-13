@@ -6,8 +6,8 @@
 const express = require("express");
 const router = express.Router(); // sous-routeur Express
 const multer = require("multer"); // middleware pour upload d'images
-const path = require("path");
-const fs = require("fs");
+const path = require("node:path");
+const fs = require("node:fs");
 
 // ─── CONFIGURATION MULTER (upload d'images) ──────────────────
 // Créer le dossier uploads s'il n'existe pas

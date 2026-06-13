@@ -1,22 +1,12 @@
-// ============================================================
-// pages/ModifierProjet.jsx — Formulaire de modification
-// Pré-remplit le formulaire avec les données existantes du projet
-// ============================================================
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchProjet, modifierProjet, imageUrl } from "../assets/api";
 
 function ModifierProjet() {
-  const { id } = useParams(); // ID dans l'URL
+  const { id } = useParams();
   const navigate = useNavigate();
-
   const [form, setForm] = useState({
-    libelle: "",
-    description: "",
-    technologies: "",
-    lienGithub: "",
-    lienDemo: "",
+    libelle: "", description: "", technologies: "", lienGithub: "", lienDemo: "",
   });
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState("");
@@ -25,23 +15,20 @@ function ModifierProjet() {
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState("");
 
-  // Charger les données du projet pour pré-remplir le formulaire
   useEffect(() => {
     const charger = async () => {
       try {
         const projet = await fetchProjet(id);
-        // Pré-remplir le formulaire avec les valeurs existantes
         setForm({
           libelle: projet.libelle || "",
           description: projet.description || "",
-          // Rejoindre le tableau de technologies en chaîne
           technologies: projet.technologies?.join(", ") || "",
           lienGithub: projet.lienGithub || "",
           lienDemo: projet.lienDemo || "",
         });
         setImageActuelle(projet.image || "");
-      } catch {
-        setErreur("Impossible de charger le projet");
+      } catch (err) {
+        setErreur("Impossible de charger le projet : " + err.message);
       } finally {
         setChargement(false);
       }
@@ -65,7 +52,6 @@ function ModifierProjet() {
     e.preventDefault();
     setEnvoi(true);
     setErreur("");
-
     try {
       const formData = new FormData();
       formData.append("libelle", form.libelle);
@@ -73,12 +59,9 @@ function ModifierProjet() {
       formData.append("technologies", form.technologies);
       formData.append("lienGithub", form.lienGithub);
       formData.append("lienDemo", form.lienDemo);
-      if (imageFile) {
-        formData.append("image", imageFile); // nouvelle image seulement si choisie
-      }
-
+      if (imageFile) formData.append("image", imageFile);
       await modifierProjet(id, formData);
-      navigate(`/projet/${id}`); // retourner au détail du projet
+      navigate(`/projet/${id}`);
     } catch (err) {
       setErreur("Erreur : " + err.message);
     } finally {
@@ -91,43 +74,43 @@ function ModifierProjet() {
   return (
     <div className="page form-page">
       <h1 className="page-titre">Modifier le projet</h1>
-
       <form onSubmit={handleSubmit} className="formulaire">
         {erreur && <div className="erreur">{erreur}</div>}
 
         <div className="champ">
-          <label>Libellé *</label>
-          <input name="libelle" type="text" value={form.libelle} onChange={handleChange} required />
+          <label htmlFor="libelle">Libellé *</label>
+          <input id="libelle" name="libelle" type="text" value={form.libelle} onChange={handleChange} required />
         </div>
 
         <div className="champ">
-          <label>Description *</label>
-          <textarea name="description" value={form.description} onChange={handleChange} rows={4} required />
+          <label htmlFor="description">Description *</label>
+          <textarea id="description" name="description" value={form.description} onChange={handleChange} rows={4} required />
         </div>
 
         <div className="champ">
-          <label>Technologies</label>
-          <input name="technologies" type="text" value={form.technologies} onChange={handleChange} />
+          <label htmlFor="technologies">Technologies</label>
+          <input id="technologies" name="technologies" type="text" value={form.technologies} onChange={handleChange} />
         </div>
 
         <div className="champ">
-          <label>Image (laisser vide pour garder l'actuelle)</label>
-          {/* Afficher l'image actuelle si pas de nouvelle sélection */}
+          <label htmlFor="image">Image (laisser vide pour garder l'actuelle)</label>
           {imageActuelle && !preview && (
-            <img src={imageUrl(imageActuelle)} alt="Image actuelle" className="image-preview" />
+            <img src={imageUrl(imageActuelle)} alt="Aperçu actuel du projet" className="image-preview" />
           )}
-          {preview && <img src={preview} alt="Nouvelle image" className="image-preview" />}
-          <input type="file" accept="image/*" onChange={handleImage} />
+          {preview && (
+            <img src={preview} alt="Aperçu du nouveau fichier sélectionné" className="image-preview" />
+          )}
+          <input id="image" type="file" accept="image/*" onChange={handleImage} />
         </div>
 
         <div className="champ">
-          <label>Lien GitHub</label>
-          <input name="lienGithub" type="url" value={form.lienGithub} onChange={handleChange} />
+          <label htmlFor="lienGithub">Lien GitHub</label>
+          <input id="lienGithub" name="lienGithub" type="url" value={form.lienGithub} onChange={handleChange} />
         </div>
 
         <div className="champ">
-          <label>Lien Démo</label>
-          <input name="lienDemo" type="url" value={form.lienDemo} onChange={handleChange} />
+          <label htmlFor="lienDemo">Lien Démo</label>
+          <input id="lienDemo" name="lienDemo" type="url" value={form.lienDemo} onChange={handleChange} />
         </div>
 
         <div className="form-actions">
