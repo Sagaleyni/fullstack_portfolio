@@ -1,39 +1,41 @@
-// ============================================================
-// app.js — Point d'entrée du serveur Express
-// C'est le fichier qu'on lance avec : node app.js
-// ============================================================
-
-// dotenv charge les variables du fichier .env dans process.env
 require("dotenv").config();
-
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const path = require("node:path");
 
-// Création de l'application Express
 const app = express();
 
-// ─── MIDDLEWARES ─────────────────────────────────────────────
-// Un middleware = une fonction qui s'exécute avant chaque requête
+// ─── SÉCURITÉ : masquer la version Express dans les headers ──
+// Sans ça, Express envoie "X-Powered-By: Express" → révèle la stack
+app.disable("x-powered-by");
 
-// Permet de recevoir du JSON dans le corps des requêtes (req.body)
+// ─── MIDDLEWARES ─────────────────────────────────────────────
 app.use(express.json());
 
-// CORS = autoriser le frontend (React sur port 5173) à parler au backend (port 5000)
+// CORS restrictif : on liste explicitement les origines autorisées
+const originesAutorisees = (process.env.FRONTEND_URL || "http://localhost")
+  .split(",")
+  .map((o) => o.trim());
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "*",
+  origin: (origin, callback) => {
+    // Autoriser les requêtes sans origin (curl, Postman, apps mobiles)
+    if (!origin) return callback(null, true);
+    if (originesAutorisees.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Origine non autorisée par CORS"));
+  },
   methods: ["GET", "POST", "PUT", "DELETE"],
 }));
 
-// Servir les images uploadées : GET /uploads/image.jpg => fichier sur disque
+// Servir les images uploadées
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ─── ROUTES ──────────────────────────────────────────────────
-// On branche le fichier des routes sur le préfixe /api/projets
 app.use("/api/projets", require("./routes/projets"));
 
-// Route de test pour vérifier que le serveur fonctionne
 app.get("/", (req, res) => {
   res.json({ message: "API Portfolio opérationnelle ✅", version: "1.0.0" });
 });
@@ -46,12 +48,11 @@ mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log("✅ Connecté à MongoDB");
-    // On démarre le serveur seulement APRÈS la connexion à la base
     app.listen(PORT, () => {
       console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
     });
   })
   .catch((err) => {
     console.error("❌ Erreur MongoDB :", err.message);
-    process.exit(1); // Quitter si la DB n'est pas accessible
+    process.exit(1);
   });
