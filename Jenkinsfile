@@ -25,8 +25,12 @@ pipeline {
         stage('Injecter le .env') {
             steps {
                 withCredentials([file(credentialsId: 'portfolio-backend-env', variable: 'ENV_FILE')]) {
-                    sh 'cp $ENV_FILE fullstack_portfolio/backend/.env'
-                    sh 'echo ".env injecte avec succes"'
+                    sh '''
+                        rm -f fullstack_portfolio/backend/.env
+                        cp $ENV_FILE fullstack_portfolio/backend/.env
+                        chmod 600 fullstack_portfolio/backend/.env
+                        echo ".env injecte avec succes"
+                    '''
                 }
             }
         }
@@ -98,17 +102,6 @@ Logs   : ${BUILD_URL}console
         }
         always {
             sh 'docker image prune -f'
-        }
-    }
-}
-stage('Injecter le .env') {
-    steps {
-        withCredentials([file(credentialsId: 'portfolio-backend-env', variable: 'ENV_FILE')]) {
-            sh '''
-                rm -f fullstack_portfolio/backend/.env
-                cp "$ENV_FILE" fullstack_portfolio/backend/.env
-                chmod 600 fullstack_portfolio/backend/.env
-            '''
         }
     }
 }
